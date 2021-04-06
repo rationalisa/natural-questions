@@ -1,0 +1,1 @@
+python3 nq_eval.py --gold_path=/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz --predictions_path= /storage/model/roberta_3/pretrain_predictions_100.json
