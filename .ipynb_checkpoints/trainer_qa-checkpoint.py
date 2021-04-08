@@ -48,12 +48,11 @@ class QuestionAnsweringTrainer(Trainer):
                 description="Evaluation",
                 # No point gathering the predictions if there are no metrics, otherwise we defer to
                 # self.args.prediction_loss_only
-                prediction_loss_only=True if compute_metrics is None else None,
+                prediction_loss_only=None, #True if compute_metrics is None else None,
                 ignore_keys=ignore_keys,
             )
         finally:
             self.compute_metrics = compute_metrics
-
         # We might have removed columns from the dataset so we put them back.
         if isinstance(eval_dataset, datasets.Dataset):
             eval_dataset.set_format(type=eval_dataset.format["type"], columns=list(eval_dataset.features.keys()))
@@ -64,13 +63,14 @@ class QuestionAnsweringTrainer(Trainer):
                 metrics = self.compute_metrics(eval_preds)
                 self.log(metrics)
             else:
-                metrics = {}
+                metrics = output.metrics
 
         if self.args.tpu_metrics_debug or self.args.debug:
             # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
             xm.master_print(met.metrics_report())
 
         self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, metrics)
+        print(metrics)
         return metrics
 
     def predict(self, test_dataset, test_examples, ignore_keys=None):

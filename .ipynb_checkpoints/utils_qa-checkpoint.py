@@ -183,7 +183,6 @@ def postprocess_qa_predictions(
             pred['start_token'] = start_token
             pred['end_token'] = end_token
             tokens = context.split(' ')
-            pred['check'] = tokens[start_token:end_token]
         # In the very rare edge case we have not a single non-null prediction, we create a fake prediction to avoid
         # failure.
         if len(predictions) == 0 or (len(predictions) == 1 and predictions[0]["text"] == "") or (predictions[0]["end_char"]-predictions[0]["start_char"])<= 1:
