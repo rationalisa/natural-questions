@@ -1,1 +1,1 @@
-python3 nq_eval.py --gold_path=/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz --predictions_path=/storage/model/roberta_3/eval_predictions.json
+python3 nq_eval.py --gold_path=/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz --predictions_path=/storage/model/roberta_3/cp2400_null_pred.json --pretty_print

@@ -225,9 +225,8 @@ def score_answers(gold_annotation_dict, pred_dict):
     long_answer_stats: List of scores for long answers.
     short_answer_stats: List of scores for short answers.
   """
-  gold_id_set = set(gold_annotation_dict.keys())
+  gold_id_set = set([str(k) for k in gold_annotation_dict.keys()])
   pred_id_set = set(pred_dict.keys())
-  print(len(gold_id_set), len(pred_id_set))
   if gold_id_set.symmetric_difference(pred_id_set):
     raise ValueError('ERROR: the example ids in gold annotations and example '
                      'ids in the prediction are not equal.')
@@ -235,11 +234,17 @@ def score_answers(gold_annotation_dict, pred_dict):
   long_answer_stats = []
   short_answer_stats = []
 
+  i= 0
   for example_id in gold_id_set:
-    gold = gold_annotation_dict[example_id]
+    gold = gold_annotation_dict[int(example_id)]
     pred = pred_dict[example_id]
-
+    if i < 10:
+        print(gold, pred)
+        print(score_long_answer(gold, pred))
+        print('*'*20)
+        
     long_answer_stats.append(score_long_answer(gold, pred))
+    i+= 1
     #short_answer_stats.append(score_short_answer(gold, pred))
 
   # use the 'score' column, which is last
@@ -261,6 +266,7 @@ def compute_f1(answer_stats, prefix=''):
   """
 
   has_gold, has_pred, is_correct, _ = list(zip(*answer_stats))
+  print("!"*20, 'correct num: {}, has gold: {}, has pred: {}'.format(sum(is_correct), sum(has_gold), sum(has_pred)))
   precision = safe_divide(sum(is_correct), sum(has_pred))
   recall = safe_divide(sum(is_correct), sum(has_gold))
   f1 = safe_divide(2 * precision * recall, precision + recall)
@@ -286,7 +292,7 @@ def compute_final_f1(long_answer_stats, short_answer_stats):
      Dictionary of name (string) -> score.
   """
   scores = compute_f1(long_answer_stats, prefix='long-answer-')
-  scores.update(compute_f1(short_answer_stats, prefix='short-answer-'))
+  #scores.update(compute_f1(short_answer_stats, prefix='short-answer-'))
   return scores
 
 
@@ -312,9 +318,9 @@ def compute_pr_curves(answer_stats, targets=None):
     total_has_gold += has_gold
 
   # Keep track of the point of maximum recall for each target.
-  max_recall = [0 for _ in targets]
-  max_precision = [0 for _ in targets]
-  max_scores = [None for _ in targets]
+  max_recall = [0.0 for _ in targets]
+  max_precision = [0.0 for _ in targets]
+  max_scores = [-1.0 for _ in targets] # TODO None
 
   # Only keep track of unique thresholds in this dictionary.
   scores_to_stats = OrderedDict()
@@ -351,7 +357,6 @@ def compute_pr_curves(answer_stats, targets=None):
       best_precision = precision
       best_recall = recall
       best_threshold = threshold
-
   return ((best_f1, best_precision, best_recall, best_threshold),
           list(zip(targets, max_recall, max_precision, max_scores)))
 
@@ -448,9 +453,9 @@ def main(_):
     print('Long answer  {: >7.2%} / {: >7.2%} / {: >7.2%}'.format(
         scores['long-answer-f1'], scores['long-answer-precision'],
         scores['long-answer-recall']))
-    print('Short answer {: >7.2%} / {: >7.2%} / {: >7.2%}'.format(
-        scores['short-answer-f1'], scores['short-answer-precision'],
-        scores['short-answer-recall']))
+    #print('Short answer {: >7.2%} / {: >7.2%} / {: >7.2%}'.format(
+    #    scores['short-answer-f1'], scores['short-answer-precision'],
+    #    scores['short-answer-recall']))
   else:
     metrics = get_metrics_with_answer_stats(long_answer_stats,
                                             short_answer_stats)

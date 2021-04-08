@@ -186,7 +186,7 @@ def postprocess_qa_predictions(
             pred['check'] = tokens[start_token:end_token]
         # In the very rare edge case we have not a single non-null prediction, we create a fake prediction to avoid
         # failure.
-        if len(predictions) == 0 or (len(predictions) == 1 and predictions[0]["text"] == ""):
+        if len(predictions) == 0 or (len(predictions) == 1 and predictions[0]["text"] == "") or (predictions[0]["end_char"]-predictions[0]["start_char"])<= 1:
             predictions.insert(0, {"text": "empty", "start_logit": 0.0, "end_logit": 0.0, "score": 0.0,
                                    'start_char': -1, 'end_char': -1, 'start_token': -1, 'end_token': -1})
 
@@ -215,7 +215,8 @@ def postprocess_qa_predictions(
                                             'end_byte': -1,
                                             'start_token': predictions[0]['start_token'],
                                             'end_token': predictions[0]['end_token']},
-                                             'long_answer_score':0.0})
+                                            'long_answer_score':np.float64(predictions[0]['probability'])})
+            #print(predictions[0]['start_token'], predictions[0]['end_token'], predictions[0]['start_char'], predictions[0]['end_char'], predictions[0]["text"], len(context), predictions[0]['probability'])
         else:
             # Otherwise we first need to find the best non-empty prediction.
             i = 0

@@ -1,6 +1,7 @@
 import apache_beam as beam
 from gzip import GzipFile
 from collections import defaultdict
+from utils_qa import postprocess_qa_predictions
 from datasets import Dataset
 import json
 import six
@@ -203,29 +204,6 @@ def simplify_nq_example(nq_example):
       raise ValueError("Incorrect number of tokens.")
 
   return simplified_nq_example
-
-
-# Post-processing:
-def post_processing_function(examples, features, predictions, stage="eval"):
-    # Post-processing: we match the start logits and end logits to answers in the original context.
-    predictions = postprocess_qa_predictions(
-        examples=examples,
-        features=features,
-        predictions=predictions,
-        n_best_size=20,
-        output_dir= args.output_dir,
-        is_world_process_zero=trainer.is_world_process_zero(),
-        prefix=stage,
-    )
-    # Format the result to the format the metric expects.
-    formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
-    #references = [{"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples]
-
-    references = [{"id": ex['id'], 'long_answer': {
-        'start_token': ex['annotations']['long_answer']['start_token'], 'end_token': ex['annotations']['long_answer']['end_token']
-      }} for ex in examples ]
-
-    return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
 
 def read_annotation_gzip(gzipped_input_file):
