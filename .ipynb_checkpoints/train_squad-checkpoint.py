@@ -111,6 +111,7 @@ def post_processing_function(examples, features, predictions, stage="eval"):
         output_dir= args.output_dir,
         is_world_process_zero=trainer.is_world_process_zero(),
         prefix=stage,
+        version_2_with_negative=True,
     )
     # Format the result to the format the metric expects.
     formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
@@ -128,12 +129,15 @@ doc_stride = 128
 batch_size = 4
 max_val_samples= 50
 
-cp = 'checkpoint-3000'
-dir_name = 'BERT_SQUAD'
+cp = 'checkpoint-0'
+dir_name = 'BERT_SQUAD_btz8'
 model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad" #'roberta-large'   # "bert-large-uncased" 
 save_dir = "/storage/model/{}".format(dir_name)
 checkpoint = "/storage/model/{}/{}".format(dir_name,cp)
 
+if not os.path.isdir(save_dir):
+    os.mkdir(save_dir)
+#position_embedding_type="relative_key"
 if os.path.isdir(checkpoint):
     model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
 else:
@@ -144,7 +148,7 @@ tokenizer = AutoTokenizer.from_pretrained(
     use_fast=True,
 )
 pad_on_right = tokenizer.padding_side == "right"
-train_dataset=load_from_disk("/storage/{}/train_{}_{}".format(dir_name, 100000, 78958)).shuffle()
+train_dataset=load_from_disk("/storage/BERT_SQUAD/train_{}_{}".format(100000, 78958)).shuffle()
 path = '/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz'
 dic = read_annotation_gzip(path)
 eval_examples = Dataset.from_dict(dic).select(range(max_val_samples))
@@ -160,11 +164,11 @@ args = TrainingArguments(
     learning_rate=3e-5,
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size*16,
-    num_train_epochs=3,
-    save_steps = 1000,
-    eval_steps = 1000,
+    num_train_epochs=2,
+    save_steps = 2000,
+    eval_steps = 2000,
     evaluation_strategy ='steps',
-    gradient_accumulation_steps=8,
+    gradient_accumulation_steps=2,
 )
 
 data_collator = default_data_collator
