@@ -238,7 +238,7 @@ def score_answers(gold_annotation_dict, pred_dict):
   for example_id in gold_id_set:
     gold = gold_annotation_dict[int(example_id)]
     pred = pred_dict[example_id]
-    if i < 10:
+    if score_long_answer(gold, pred)[2]==True or i <10:
         print(gold, pred)
         print(score_long_answer(gold, pred))
         print('*'*20)

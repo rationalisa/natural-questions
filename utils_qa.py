@@ -203,11 +203,11 @@ def postprocess_qa_predictions(
         if not version_2_with_negative:
             #all_predictions[example["id"]] = predictions[0]["text"]
             ## TODO
-            all_predictions[example["id"]] = {'text': predictions[0]["text"],
-                                            'start_char': predictions[0]['start_char'],
-                                            'end_char': predictions[0]['end_char'],
-                                            'start_token': predictions[0]['start_token'],
-                                            'end_token': predictions[0]['end_token'] }
+            #all_predictions[example["id"]] = {'text': predictions[0]["text"],
+            #                                'start_char': predictions[0]['start_char'],
+            #                                'end_char': predictions[0]['end_char'],
+            #                                'start_token': predictions[0]['start_token'],
+            #                                'end_token': predictions[0]['end_token'] }
             eval_dict['predictions'].append({'example_id':example['id'], 
                                              'long_answer': {
                                             'start_byte': -1,
@@ -227,9 +227,23 @@ def postprocess_qa_predictions(
             score_diff = null_score - best_non_null_pred["start_logit"] - best_non_null_pred["end_logit"]
             scores_diff_json[example["id"]] = float(score_diff)  # To be JSON-serializable.
             if score_diff > null_score_diff_threshold:
-                all_predictions[example["id"]] = ""
+                #all_predictions[example["id"]] = {"text": "empty", 'start_char': -1, 'end_char': -1, 'start_token': -1, 'end_token': -1}
+                eval_dict['predictions'].append({'example_id':example['id'], 
+                                             'long_answer': {
+                                            'start_byte': -1,
+                                            'end_byte': -1,
+                                            'start_token': -1,
+                                            'end_token': -1},
+                                            'long_answer_score':np.float64(null_score)})
             else:
-                all_predictions[example["id"]] = best_non_null_pred["text"]
+                #all_predictions[example["id"]] = best_non_null_pred
+                eval_dict['predictions'].append({'example_id':example['id'], 
+                                             'long_answer': {
+                                            'start_byte': -1,
+                                            'end_byte': -1,
+                                            'start_token': best_non_null_pred['start_token'],
+                                            'end_token': best_non_null_pred['end_token']},
+                                            'long_answer_score':np.float64(best_non_null_pred['probability'])})
 
         # Make `predictions` JSON-serializable by casting np.float back to float.
         all_nbest_json[example["id"]] = [
@@ -249,25 +263,29 @@ def postprocess_qa_predictions(
         nbest_file = os.path.join(
             output_dir, "nbest_predictions.json" if prefix is None else f"{prefix}_nbest_predictions.json"
         )
-        if version_2_with_negative:
-            null_odds_file = os.path.join(
-                output_dir, "null_odds.json" if prefix is None else f"{prefix}_null_odds.json"
-            )
 
         logger.info(f"Saving predictions to {prediction_file}.")
         print(f"Saving predictions to {prediction_file}.")
         with open(prediction_file, "w") as writer:
             writer.write(json.dumps(eval_dict, indent=4) + "\n")
-        '''
+        
         logger.info(f"Saving nbest_preds to {nbest_file}.")
+        print(f"Saving nbest_preds to {nbest_file}.")
         with open(nbest_file, "w") as writer:
             writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
+
+        
         '''
+        if version_2_with_negative:
+            null_odds_file = os.path.join(
+                output_dir, "null_odds.json" if prefix is None else f"{prefix}_null_odds.json"
+            )
+            
         if version_2_with_negative:
             logger.info(f"Saving null_odds to {null_odds_file}.")
             with open(null_odds_file, "w") as writer:
                 writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
-    
+        '''
     return all_predictions
 
 
