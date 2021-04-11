@@ -1,1 +1,1 @@
-python3 nq_eval.py --gold_path=/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz --predictions_path=/storage/model/BERT_SQUAD_btz8/cp16000_false_pred.json --pretty_print
+python3 nq_eval.py --gold_path=/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz --predictions_path=/storage/model/BERT_SQUAD/cp3000_null_pred.json --pretty_print
