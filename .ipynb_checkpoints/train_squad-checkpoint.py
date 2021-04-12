@@ -129,8 +129,8 @@ doc_stride = 128
 batch_size = 4
 max_val_samples= 50
 
-cp = 'checkpoint-26000'
-dir_name = 'BERT_SQUAD_TOK'
+cp = 'checkpoint-0'
+dir_name = 'BERT_SQUAD_TOK_REL'
 model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad" #'roberta-large'   # "bert-large-uncased" 
 save_dir = os.path.join("/storage/model", dir_name)
 checkpoint = os.path.join(save_dir,cp)
@@ -140,7 +140,8 @@ if not os.path.isdir(save_dir):
 #position_embedding_type="relative_key"
 if os.path.isdir(checkpoint):
     print('Loading from {}'.format(checkpoint))
-    model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
+    model = AutoModelForQuestionAnswering.from_pretrained(checkpoint, position_embedding_type="relative_key_query")
+    #model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
 else:
     model = AutoModelForQuestionAnswering.from_pretrained(model_pretrain)
 
