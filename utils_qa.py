@@ -140,7 +140,7 @@ def postprocess_qa_predictions(
                     ):
                         continue
                     # Don't consider answers with a length that is either < 0 or > max_answer_length.
-                    if end_index < start_index or end_index - start_index + 1 > max_answer_length:
+                    if end_index < start_index+2 or end_index - start_index + 1 > max_answer_length:
                         continue
                     # Don't consider answer that don't have the maximum context available (if such information is
                     # provided).
