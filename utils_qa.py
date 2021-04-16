@@ -201,13 +201,6 @@ def postprocess_qa_predictions(
 
         # Pick the best prediction. If the null answer is not possible, this is easy.
         if not version_2_with_negative:
-            #all_predictions[example["id"]] = predictions[0]["text"]
-            ## TODO
-            #all_predictions[example["id"]] = {'text': predictions[0]["text"],
-            #                                'start_char': predictions[0]['start_char'],
-            #                                'end_char': predictions[0]['end_char'],
-            #                                'start_token': predictions[0]['start_token'],
-            #                                'end_token': predictions[0]['end_token'] }
             eval_dict['predictions'].append({'example_id':example['id'], 
                                              'long_answer': {
                                             'start_byte': -1,
@@ -215,7 +208,7 @@ def postprocess_qa_predictions(
                                             'start_token': predictions[0]['start_token'],
                                             'end_token': predictions[0]['end_token']},
                                             'long_answer_score':np.float64(predictions[0]['probability'])})
-            #print(predictions[0]['start_token'], predictions[0]['end_token'], predictions[0]['start_char'], predictions[0]['end_char'], predictions[0]["text"], len(context), predictions[0]['probability'])
+
         else:
             # Otherwise we first need to find the best non-empty prediction.
             i = 0
@@ -274,18 +267,6 @@ def postprocess_qa_predictions(
         with open(nbest_file, "w") as writer:
             writer.write(json.dumps(all_nbest_json, indent=4) + "\n")
 
-        
-        '''
-        if version_2_with_negative:
-            null_odds_file = os.path.join(
-                output_dir, "null_odds.json" if prefix is None else f"{prefix}_null_odds.json"
-            )
-            
-        if version_2_with_negative:
-            logger.info(f"Saving null_odds to {null_odds_file}.")
-            with open(null_odds_file, "w") as writer:
-                writer.write(json.dumps(scores_diff_json, indent=4) + "\n")
-        '''
     return all_predictions
 
 

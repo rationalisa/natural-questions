@@ -320,7 +320,7 @@ def compute_pr_curves(answer_stats, targets=None):
   # Keep track of the point of maximum recall for each target.
   max_recall = [0.0 for _ in targets]
   max_precision = [0.0 for _ in targets]
-  max_scores = [-1.0 for _ in targets] # TODO None
+  max_scores = [-1.0 for _ in targets] #None
 
   # Only keep track of unique thresholds in this dictionary.
   scores_to_stats = OrderedDict()

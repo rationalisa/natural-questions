@@ -97,8 +97,8 @@ batch_size = 1
 pad_on_right = tokenizer.padding_side == "right"
 
 sample_size = 4000
-pre_size = 100000
-total_size = 220000
+pre_size = 220000
+total_size = 300000
 save_dir = os.path.join('/storage','BERT_SQUAD_TOK')
 if not os.path.isdir(save_dir):
     os.mkdir(save_dir)

@@ -1,13 +1,38 @@
 import transformers
-from transformers import PreTrainedTokenizerFast
+from transformers.utils import check_min_version
+from transformers import PreTrainedTokenizerFast,AutoConfig, AutoTokenizer
 from datasets import concatenate_datasets, load_from_disk, Dataset
-from transformers import AutoTokenizer
 from utils_qa import postprocess_qa_predictions
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import AutoModelForQuestionAnswering, TrainingArguments, Trainer, EvalPrediction
 from transformers import default_data_collator
 from utils_data import read_annotation_gzip
 import os
+from absl import flags
+from absl import logging
+check_min_version("4.5.0.dev0")
+
+
+max_length = 512
+doc_stride = 128
+max_val_samples= 50
+
+val_path = '/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz'
+model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad" 
+root_path = "/storage/model"
+hyper_tokens = ['<P>','</P>', '<Table>','</Table>','<Li>','</Li>','<Th>','</Th>','<Td>','</Td>','Ul','/Ul']
+
+flags.DEFINE_integer(
+    'batch_size', 4, 'Batch size during training')
+flags.DEFINE_string('dir_name','BERT_SQUAD_TOK_L_REL', 'Path to the diretory to save the models')
+
+flags.DEFINE_string('cp','checkpoint-0', 'name of the pretrained checkpoint under dir_name')
+
+flags.DEFINE_integer('steps', 200, 'Frequency to evaluate and save model during training')
+flags.DEFINE_integer('epochs', 1, 'Finetune epochs')
+flags.DEFINE_bool('pretty_print', False, 'Whether to pretty print output.')
+
+FLAGS = flags.FLAGS
 
 # Validation preprocessing
 def prepare_validation_features(examples):
@@ -115,7 +140,6 @@ def post_processing_function(examples, features, predictions, stage="eval"):
     )
     # Format the result to the format the metric expects.
     formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
-    #references = [{"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples]
 
     references = [{"id": ex['id'], 'start_token': ex['annotations'][0]['long_answer']['start_token'], 
                    'end_token': ex['annotations'][0]['long_answer']['end_token']
@@ -124,77 +148,85 @@ def post_processing_function(examples, features, predictions, stage="eval"):
     return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
 
-max_length = 512
-doc_stride = 128
-batch_size = 4
-max_val_samples= 50
 
-cp = 'checkpoint-6500'
-dir_name = 'BERT_SQUAD'#_TOK_REL
-model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad" #'roberta-large'   # "bert-large-uncased" 
-save_dir = os.path.join("/storage/model", dir_name)
-checkpoint = os.path.join(save_dir,cp)
+save_dir = os.path.join(root_path, FLAGS.dir_name)
+checkpoint = os.path.join(save_dir,FLAGS.cp)
 
-if not os.path.isdir(save_dir):
-    os.mkdir(save_dir)
-#position_embedding_type="relative_key"
-if os.path.isdir(checkpoint):
-    print('Loading from {}'.format(checkpoint))
-    if 'REL' in dir_name:
-        model = AutoModelForQuestionAnswering.from_pretrained(checkpoint, position_embedding_type="relative_key_query")
+
+def main(_):
+    if not os.path.isdir(save_dir):
+        os.mkdir(save_dir)
+    # Build model
+    if 'REL' in FLAGS.dir_name:
+        if os.path.isdir(checkpoint):
+            print('Loading from {}'.format(checkpoint))
+            config = AutoConfig.from_pretrained(checkpoint)
+        else:
+            config = AutoConfig.from_pretrained(model_pretrain)
+        print(config.position_embedding_type)
+        config.position_embedding_type="relative_key_query"
+        model = AutoModelForQuestionAnswering.from_config(config)
     else:
-        model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
-else:
-    model = AutoModelForQuestionAnswering.from_pretrained(model_pretrain)
+        if os.path.isdir(checkpoint):
+            print('Loading from {}'.format(checkpoint))
+            model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
+        else:
+            model = AutoModelForQuestionAnswering.from_pretrained(model_pretrain)
+    # Tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_pretrain,
+        use_fast=True,
+    )
+    if 'TOK' in FLAGS.dir_name:
+        tokenizer.add_tokens(hyper_tokens,special_tokens=True)
+        model.resize_token_embeddings(len(tokenizer))
+    
+    # dataset
+    pad_on_right = tokenizer.padding_side == "right"
+    
+    #train_dataset_22 =load_from_disk("/storage/BERT_SQUAD_TOK/train_{}_{}".format(220000, 177878)).shuffle()
+    train_dataset =load_from_disk("/storage/BERT_SQUAD_TOK/train_{}_{}".format(80000, 63244)).shuffle()
+    #train_dataset=load_from_disk("/storage/BERT_SQUAD_TOK/train_{}_{}".format(100000, 82522)).shuffle()
+    #train_dataset = concatenate_datasets([train_dataset_22, train_dataset_8])
+    
+    val_dic = read_annotation_gzip(val_path)
+    eval_examples = Dataset.from_dict(val_dic).select(range(max_val_samples))
+    eval_dataset = eval_examples.map(prepare_validation_features, batched=True, remove_columns=eval_examples.column_names)
 
-tokenizer = AutoTokenizer.from_pretrained(
-    model_pretrain,
-    use_fast=True,
-)
-if 'TOK' in dir_name:
-    tokenizer.add_tokens(['<P>','</P>', '<Table>','</Table>','<Li>','</Li>','<Th>','</Th>','<Td>','</Td>','Ul','/Ul'],special_tokens=True)
-    model.resize_token_embeddings(len(tokenizer))
-pad_on_right = tokenizer.padding_side == "right"
-train_dataset=load_from_disk("/storage/BERT_SQUAD/train_{}_{}".format(100000, 78958)).shuffle()
-#train_dataset=load_from_disk("/storage/BERT_SQUAD_TOK/train_{}_{}".format(100000, 82522)).shuffle()
-path = '/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz'
-dic = read_annotation_gzip(path)
-eval_examples = Dataset.from_dict(dic).select(range(max_val_samples))
-eval_dataset = eval_examples.map(prepare_validation_features, batched=True, remove_columns=eval_examples.column_names)
+    args = TrainingArguments(
+        save_dir,
+        learning_rate=2e-5,
+        per_device_train_batch_size=FLAGS.batch_size,
+        per_device_eval_batch_size=FLAGS.batch_size*16,
+        num_train_epochs=FLAGS.epoch,
+        save_steps = FLAGS.steps,
+        eval_steps = FLAGS.steps,
+        logging_steps = FLAGS.steps,
+        evaluation_strategy ='steps',
+        gradient_accumulation_steps=8,
+    )
+
+    data_collator = default_data_collator
+
+    # Initialize Trainer
+    trainer = QuestionAnsweringTrainer(
+        model=model,
+        args=args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        eval_examples=eval_examples,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        post_process_function=post_processing_function,
+    )
+
+    if os.path.isdir(checkpoint):
+        train_result = trainer.train(resume_from_checkpoint=checkpoint)
+    else:
+        trainer.train()
+
+    trainer.save_model(os.path.join(save_dir,'last'))
 
 
-#weight_decay=0.01
-
-if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
-args = TrainingArguments(
-    save_dir,
-    learning_rate=3e-5,
-    per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size*16,
-    num_train_epochs=6,
-    save_steps = 500,
-    eval_steps = 500,
-    evaluation_strategy ='steps',
-    gradient_accumulation_steps=8,
-)
-
-data_collator = default_data_collator
-
-# Initialize our Trainer
-trainer = QuestionAnsweringTrainer(
-    model=model,
-    args=args,
-    train_dataset=train_dataset,
-    eval_dataset=eval_dataset,
-    eval_examples=eval_examples,
-    tokenizer=tokenizer,
-    data_collator=data_collator,
-    post_process_function=post_processing_function,
-)
-
-
-if os.path.isdir(checkpoint):
-    train_result = trainer.train(resume_from_checkpoint=checkpoint)
-else:
-    trainer.train()
+if __name__ == "__main__":
+    app.run(main)
