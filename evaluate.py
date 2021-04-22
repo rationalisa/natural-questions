@@ -16,17 +16,16 @@ max_length = 512
 doc_stride = 128
 
 
-#val_path = '/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz'
-val_path = '/storage/datset/v1.0-simplified_nq-dev-all.jsonl.gz'
 model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad" 
-root_path = "/storage/model"
 hyper_tokens = ['<P>','</P>', '<Table>','</Table>','<Li>','</Li>','<Th>','</Th>','<Td>','</Td>','Ul','/Ul']
 
 flags.DEFINE_integer('batch_size', 64, 'Batch size during evaluation')
 
-flags.DEFINE_string('dir_name','BERT_SQUAD_TOK_L3', 'Path to the diretory to save the models')
+flags.DEFINE_string('save_dir','/storage/model/BERT_SQUAD_TOK_L3', 'Path to the diretory to save the models')
 
-flags.DEFINE_string('cp','checkpoint-0', 'Name of the pretrained checkpoint under dir_name')
+flags.DEFINE_string('cp','checkpoint-0', 'Name of the pretrained checkpoint under save_dir')
+
+flags.DEFINE_string('val_path','/storage/datset/v1.0-simplified_nq-dev-all.jsonl.gz', 'Path to the validation dataset')
 
 flags.DEFINE_integer('max_answer_length', 500, 'The maximum length of an answer that can be generated. This is\
                     needed because the start and end predictions are not conditioned on one another')
@@ -37,6 +36,8 @@ flags.DEFINE_bool('TOK', True, 'Wheather to tokenize hyperlink special character
 
 flags.DEFINE_integer('max_val_samples', -1, 'max number of validation samples from validation set. For nq-dev-samples\
                     size should be no more than 200, -1 to use all the data')
+
+flags.DEFINE_integer('diff_threshold', 0, 'null diff threshold The threshold used to select the null answer.')
 
 FLAGS = flags.FLAGS
 
@@ -52,8 +53,7 @@ def main(_):
         tokenizer.add_tokens(hyper_tokens,special_tokens=True)
     pad_on_right = tokenizer.padding_side == "right"
 
-    save_dir = os.path.join(root_path, FLAGS.dir_name)
-    checkpoint = os.path.join(save_dir,FLAGS.cp)
+    checkpoint = os.path.join(FLAGS.save_dir,FLAGS.cp)
     assert os.path.exists(checkpoint)
     
     model = AutoModelForQuestionAnswering.from_pretrained(checkpoint)
@@ -148,7 +148,7 @@ def main(_):
 
         return tokenized_examples
     
-    dic = read_annotation_gzip(val_path)
+    dic = read_annotation_gzip(FLAGS.val_path)
     eval_examples = Dataset.from_dict(dic)
     if FLAGS.max_val_samples != -1:
         eval_examples = eval_examples.select(range(FLAGS.max_val_samples))
@@ -159,7 +159,7 @@ def main(_):
     data_collator = default_data_collator
 
     args = TrainingArguments(
-        save_dir,
+        FLAGS.save_dir,
         learning_rate=3e-5,
         per_device_train_batch_size=FLAGS.batch_size,
         per_device_eval_batch_size=FLAGS.batch_size,
@@ -182,6 +182,7 @@ def main(_):
             output_dir= args.output_dir,
             is_world_process_zero=trainer.is_world_process_zero(),
             prefix=stage,
+            null_score_diff_threshold=float(FLAGS.diff_threshold),
             version_2_with_negative=True,
         )
         # Format the result to the format the metric expects.

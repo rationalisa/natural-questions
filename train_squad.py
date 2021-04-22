@@ -15,17 +15,16 @@ check_min_version("4.5.0.dev0")
 max_length = 512
 doc_stride = 128
 
-val_path = '/storage/datset/v1.0_sample_nq-dev-sample.jsonl.gz'
 model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad" 
-root_path = "/storage/model"
-data_path = '/storage/BERT_SQUAD_TOK'
 hyper_tokens = ['<P>','</P>', '<Table>','</Table>','<Li>','</Li>','<Th>','</Th>','<Td>','</Td>','Ul','/Ul']
 
 flags.DEFINE_integer('batch_size', 4, 'Batch size during training')
 
-flags.DEFINE_string('dir_name','BERT_SQUAD_TOK_L3', 'Path to the diretory to save the models')
+flags.DEFINE_string('save_dir','/storage/model/BERT_SQUAD_TOK_L3', 'Path to the diretory to save the models')
 
-flags.DEFINE_string('cp','checkpoint-0', 'Name of the pretrained checkpoint under dir_name')
+flags.DEFINE_string('data_dir','/storage/BERT_SQUAD_TOK', 'Path to the diretory of the training and validation dataset')
+
+flags.DEFINE_string('cp','checkpoint-0', 'Name of the pretrained checkpoint under save_dir')
 
 flags.DEFINE_integer('steps', 200, 'Frequency to evaluate and save model during training')
 
@@ -34,9 +33,6 @@ flags.DEFINE_integer('epochs', 1, 'Finetune epochs')
 flags.DEFINE_bool('TOK', True, 'Wheather to tokenize hyperlink special characters as single tokens')
 
 flags.DEFINE_bool('REL', False, 'Wheather to use a relative postional embedding')
-
-flags.DEFINE_bool('eval_gz', False, 'Wheather to evaluate using offical validation set, otherwise use 50\
-                  samples form training')
 
 flags.DEFINE_integer('max_val_samples', 50, 'max number of validation samples from validation set. For nq-dev-samples\
                     size should be no more than 200')
@@ -47,10 +43,9 @@ FLAGS = flags.FLAGS
 
 
 def main(_):
-    save_dir = os.path.join(root_path, FLAGS.dir_name)
-    checkpoint = os.path.join(save_dir,FLAGS.cp)
-    if not os.path.isdir(save_dir):
-        os.mkdir(save_dir)
+    checkpoint = os.path.join(FLAGS.save_dir,FLAGS.cp)
+    if not os.path.isdir(FLAGS.save_dir):
+        os.mkdir(FLAGS.save_dir)
     # Build model
     if FLAGS.REL:
         if os.path.isdir(checkpoint):
@@ -167,21 +162,16 @@ def main(_):
 
     pad_on_right = tokenizer.padding_side == "right"
     
-    train_dataset_22 =load_from_disk(os.path.join(data_path, "train_220000_177878")).shuffle(seed=1)
+    train_dataset_22 =load_from_disk(os.path.join(FLAGS.data_dir, "train_220000_177878")).shuffle(seed=1)
     train_dataset_8 =load_from_disk("/storage/BERT_SQUAD_TOK/train_{}_{}".format(80000, 63244)).shuffle(seed=1)
     train_dataset = concatenate_datasets([train_dataset_22, train_dataset_8])
     
-    if FLAGS.eval_gz:
-        val_dic = read_annotation_gzip(val_path)
-        eval_examples = Dataset.from_dict(val_dic).select(range(max_val_samples))
-        eval_dataset = eval_examples.map(prepare_validation_features, batched=True, \
-                                         remove_columns=eval_examples.column_names)
-    else:
-        eval_dataset =load_from_disk(os.path.join(data_path, "valid_50"))
-        eval_examples = load_from_disk(os.path.join(data_path,"example_valid_50"))
+
+    eval_dataset =load_from_disk(os.path.join(FLAGS.data_dir, "valid_50"))
+    eval_examples = load_from_disk(os.path.join(FLAGS.data_dir,"example_valid_50"))
     
     args = TrainingArguments(
-        save_dir,
+        FLAGS.save_dir,
         learning_rate=3e-5,
         per_device_train_batch_size=FLAGS.batch_size,
         per_device_eval_batch_size=FLAGS.batch_size*16,
@@ -211,7 +201,7 @@ def main(_):
     else:
         trainer.train()
 
-    trainer.save_model(os.path.join(save_dir,'last'))
+    trainer.save_model(os.path.join(FLAGS.save_dir,'last'))
 
 
 if __name__ == "__main__":

@@ -13,11 +13,9 @@ doc_stride = 128
 hyper_tokens = ['<P>','</P>', '<Table>','</Table>','<Li>','</Li>','<Th>','</Th>','<Td>','</Td>','Ul','/Ul']
 model_pretrain = "bert-large-cased-whole-word-masking-finetuned-squad"
 
-## Modify before preprocess ##
-root_path = "/storage" # root prefix before dir_name to store 
-cache_dir='/storage/datset' #cache dir to store training set
-    
-flags.DEFINE_string('dir_name','BERT_SQUAD_TOK', 'Path to the diretory to save the training datasets')
+flags.DEFINE_string('data_dir','/storage/BERT_SQUAD_TOK', 'Path to the diretory to save the training datasets')
+
+flags.DEFINE_string('cache_dir','/storage/datset', 'Cache dir to store temp training set')
 
 flags.DEFINE_integer('pre_size', 0, 'Starting example index in the dataset')
 
@@ -33,7 +31,7 @@ FLAGS = flags.FLAGS
 
 def main(_):
     logging.info('loading dataset...')
-    datasets = load_dataset("natural_questions",cache_dir=cache_dir)
+    datasets = load_dataset("natural_questions",cache_dir=FLAGS.cache_dir)
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_pretrain,
@@ -43,9 +41,8 @@ def main(_):
     if FLAGS.TOK:
         tokenizer.add_tokens(hyper_tokens,special_tokens=True)
         
-    save_dir = os.path.join(root_path, FLAGS.dir_name)
-    if not os.path.isdir(save_dir):
-        os.mkdir(save_dir)
+    if not os.path.isdir(FLAGS.data_dir):
+        os.mkdir(FLAGS.data_dir)
     
     # Training preprocessing
     def prepare_train_features(examples):
@@ -238,11 +235,11 @@ def main(_):
             data_list.append(tokenized_test)
     total = concatenate_datasets(data_list)
     if FLAGS.train:
-        total.save_to_disk(os.path.join(save_dir, "train_{}_{}".format(FLAGS.total_size-FLAGS.pre_size, len(total))))
+        total.save_to_disk(os.path.join(FLAGS.data_dir, "train_{}_{}".format(FLAGS.total_size-FLAGS.pre_size, len(total))))
     else:
         examples = concatenate_datasets(example_list)
-        total.save_to_disk(os.path.join(save_dir, "valid_{}".format(FLAGS.total_size-FLAGS.pre_size)))
-        examples.save_to_disk(os.path.join(save_dir, "example_valid_{}".format(FLAGS.total_size-FLAGS.pre_size)))
+        total.save_to_disk(os.path.join(FLAGS.data_dir, "valid_{}".format(FLAGS.total_size-FLAGS.pre_size)))
+        examples.save_to_disk(os.path.join(FLAGS.data_dir, "example_valid_{}".format(FLAGS.total_size-FLAGS.pre_size)))
             
 
 if __name__ == "__main__":
