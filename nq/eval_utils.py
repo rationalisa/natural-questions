@@ -210,13 +210,22 @@ def read_prediction_json(predictions_path):
     A dictionary with key = example_id, value = NQInstancePrediction.
 
   """
-  logging.info('Reading predictions from file: %s', format(predictions_path))
-  with open(predictions_path, 'r') as f:
-    predictions = json.loads(f.read())
+  predictions = []
+  paths = predictions_path.split('@')
+  logging.info('Reading predictions from file: %s', format(' '.join(paths)))
+  for p in paths:
+    with open(p, 'r') as f:
+      predictions.append(json.loads(f.read())['predictions'])
 
   nq_pred_dict = {}
-  for single_prediction in predictions['predictions']:
-
+  for single_predictions in zip(*predictions):
+    starts = [p['long_answer']['start_token'] for p in single_predictions]
+    ends = [p['long_answer']['end_token'] for p in single_predictions]   
+    if -1 in starts and -1 in ends:
+      single_prediction = single_predictions[0]
+    else:
+      scores = [p['long_answer_score'] for p in single_predictions]
+      single_prediction = single_predictions[scores.index(max(scores))]
     if 'long_answer' in single_prediction:
       long_span = Span(single_prediction['long_answer']['start_byte'],
                        single_prediction['long_answer']['end_byte'],

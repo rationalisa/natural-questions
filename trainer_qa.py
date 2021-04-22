@@ -64,13 +64,13 @@ class QuestionAnsweringTrainer(Trainer):
                 self.log(metrics)
             else:
                 metrics = output.metrics
-
+        else: 
+            metrics = output.metrics
         if self.args.tpu_metrics_debug or self.args.debug:
             # tpu-comment: Logging debug metrics for PyTorch/XLA (compile, execute times, ops, etc.)
             xm.master_print(met.metrics_report())
 
         self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, metrics)
-        print(metrics)
         return metrics
 
     def predict(self, test_dataset, test_examples, ignore_keys=None):

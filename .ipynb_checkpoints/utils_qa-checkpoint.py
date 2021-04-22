@@ -102,7 +102,6 @@ def postprocess_qa_predictions(
 
         min_null_prediction = None
         prelim_predictions = []
-
         # Looping through all the features associated to the current example.
         for feature_index in feature_indices:
             # We grab the predictions of the model for this feature.

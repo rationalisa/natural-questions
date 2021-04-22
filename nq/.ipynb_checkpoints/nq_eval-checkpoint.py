@@ -234,19 +234,12 @@ def score_answers(gold_annotation_dict, pred_dict):
   long_answer_stats = []
   short_answer_stats = []
 
-  i= 0
   for example_id in gold_id_set:
     gold = gold_annotation_dict[int(example_id)]
     pred = pred_dict[example_id]
-    if score_long_answer(gold, pred)[2]==True or i <10:
-        print(gold, pred)
-        print(score_long_answer(gold, pred))
-        print('*'*20)
-        
-    long_answer_stats.append(score_long_answer(gold, pred))
-    i+= 1
-    #short_answer_stats.append(score_short_answer(gold, pred))
 
+    long_answer_stats.append(score_long_answer(gold, pred))
+    #short_answer_stats.append(score_short_answer(gold, pred))
   # use the 'score' column, which is last
   long_answer_stats.sort(key=lambda x: x[-1], reverse=True)
   #short_answer_stats.sort(key=lambda x: x[-1], reverse=True)
