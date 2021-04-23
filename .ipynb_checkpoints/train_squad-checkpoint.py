@@ -24,6 +24,8 @@ flags.DEFINE_string('save_dir','/storage/model/BERT_SQUAD_TOK_L3', 'Path to the 
 
 flags.DEFINE_string('data_dir','/storage/BERT_SQUAD_TOK', 'Path to the diretory of the training and validation dataset')
 
+flags.DEFINE_string('train_name','train_220000_177878', 'name of training set')
+
 flags.DEFINE_string('cp','checkpoint-0', 'Name of the pretrained checkpoint under save_dir')
 
 flags.DEFINE_integer('steps', 200, 'Frequency to evaluate and save model during training')
@@ -162,9 +164,7 @@ def main(_):
 
     pad_on_right = tokenizer.padding_side == "right"
     
-    train_dataset_22 =load_from_disk(os.path.join(FLAGS.data_dir, "train_220000_177878")).shuffle(seed=1)
-    train_dataset_8 =load_from_disk("/storage/BERT_SQUAD_TOK/train_{}_{}".format(80000, 63244)).shuffle(seed=1)
-    train_dataset = concatenate_datasets([train_dataset_22, train_dataset_8])
+    train_dataset =load_from_disk(os.path.join(FLAGS.data_dir, FLAGS.train_name)).shuffle(seed=1)
     
 
     eval_dataset =load_from_disk(os.path.join(FLAGS.data_dir, "valid_50"))
