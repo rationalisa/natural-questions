@@ -1,6 +1,6 @@
 # Natural Questions Long Answer Task
 
-This is a simple repo to finetune pretrained [HuggingFace's Transformer](https://huggingface.co/transformers/quickstart.html) 
+This is a simple repo to finetune the pretrained [HuggingFace's Transformer](https://huggingface.co/transformers/quickstart.html) 
 model on Natural Question (NQ) task.
 
 Natural Questions (NQ) contains real user questions issued to Google search, and
@@ -45,7 +45,7 @@ yet pretty clever for question answering tasks of long sequences. Modification o
 
 
 ### F1 Results
-The results are tested on validation set of size 7830. (As during validation step during training, we use samples splitted from 
+The scores are tested on validation set of size 7830. (As during validation step during training, I use samples split from 
 original training set that are not included in the training set)
 
 |   F1    | Precision |  Recall |
