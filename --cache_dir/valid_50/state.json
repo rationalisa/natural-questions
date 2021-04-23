@@ -1,0 +1,30 @@
+{
+  "_data": null,
+  "_data_files": [
+    {
+      "filename": "cache-4e3445f11bcfb03e.arrow"
+    }
+  ],
+  "_fingerprint": "c0e036704f0dbfa6",
+  "_format_columns": [
+    "attention_mask",
+    "end_positions",
+    "example_id",
+    "input_ids",
+    "offset_mapping",
+    "start_positions",
+    "token_type_ids"
+  ],
+  "_format_kwargs": {},
+  "_format_type": null,
+  "_indexes": {},
+  "_indices": null,
+  "_indices_data_files": [],
+  "_inplace_history": [
+    {
+      "transforms": []
+    }
+  ],
+  "_output_all_columns": false,
+  "_split": null
+}
