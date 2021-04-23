@@ -19,7 +19,7 @@ Go to [NQ dataset site](https://ai.google.com/research/NaturalQuestions/download
 [nq-dev-sample set](https://storage.cloud.google.com/natural_questions/v1.0/sample/nq-dev-sample.jsonl.gz).
 Training data is fetched through Transformer's dataset utility.
 
-### Train Model
+### Train Model and Evaluate
 The whole process includes preprocessing, training and evaluation steps.
 
 ```
@@ -53,6 +53,6 @@ original training set that are not included in the training set)
 |  59.84  |  60.44%   |  59.24% |
 
 ### Fav Charity ###
-PETSMART Charities(https://secure.petsmartcharities.org/give/219478/#!/donation/checkout?c_src=pci_web&c_src2=makeadonation_redirect)
+[PETSMART Charities](https://secure.petsmartcharities.org/give/219478/#!/donation/checkout?c_src=pci_web&c_src2=makeadonation_redirect)
 
 
